@@ -686,7 +686,7 @@ public class HookSystem : MonoBehaviour
     /// 增加抓取质量
     public void AddGrabbedMass(float mass)
     {
-        grabbedMass += mass;
+        grabbedMass = (mass + hook自身质量);
     }
 
     //重置抓取质量
