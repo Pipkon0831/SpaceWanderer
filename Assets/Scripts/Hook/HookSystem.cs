@@ -492,16 +492,16 @@ public class HookSystem : MonoBehaviour
         float targetLaunch = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed; // 目标发射速度
         currentLaunchSpeed = Mathf.MoveTowards(currentLaunchSpeed, targetLaunch, launchStep); // 平滑移动到目标
 
-        // 回收速度平滑过渡（目标速度由CalculateTargetRetrieveSpeed计算）
+        // 回收速度平滑过渡
         currentRetrieveSpeed = CalculateTargetRetrieveSpeed();
     }
     
     /// 计算目标回收速度（受抓取质量影响）
     private float CalculateTargetRetrieveSpeed()
     {
-        float massResistance = 1 + (grabbedMass * grabbedMass); // 质量阻力：抓取质量越大，阻力越大（平方关系）
+        float massResistance = 1 + grabbedMass; // 质量阻力：抓取质量越大，阻力越大
         float baseSpeed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed; // 基础速度（加速/正常）
-        // 回收速度 = 基础速度 × 2 / 阻力（确保质量越大速度越慢，最低为基础速度的10%）
+        // 回收速度 = 基础速度 × 2 / 阻力（确保质量越大速度越慢，保留一个最低值）
         return Mathf.Max(0.1f, baseSpeed * 2f / massResistance);
     }
 
