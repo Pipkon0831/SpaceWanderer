@@ -40,9 +40,38 @@ public class CollectibleSpawnManager : MonoBehaviour
     [Tooltip("是否显示调试信息")]
     public bool showDebugInfo = true;
 
+    [Header("GUI设置")]
+    [Tooltip("GUI显示位置")]
+    public Vector2 guiPosition = new Vector2(1800, 10);
+
+    [Tooltip("GUI背景颜色")]
+    public Color backgroundColor = new Color(0, 0, 0, 0);
+
+    [Tooltip("GUI文字颜色")]
+    public Color textColor = Color.white;
+
+    [Tooltip("GUI字体大小")]
+    public int fontSize = 36;
+
     // 统一游戏时间（自游戏开始统一游戏时间（自游戏开始后秒数）
     private float currentGameTime = 0f;
+    private GUIStyle guiStyle; // 用于存储GUI样式
+    private GUIStyleState guiStyleState; // 用于存储GUI样式状态
 
+    private void Start()
+    {
+        // 初始化GUI样式
+        guiStyle = new GUIStyle();
+        guiStyleState = new GUIStyleState();
+        
+        // 设置文字样式
+        guiStyleState.textColor = textColor;
+        guiStyle.normal = guiStyleState;
+        guiStyle.fontSize = fontSize;
+        
+        // 确保currentGameTime在关卡开始时正确初始化
+        currentGameTime = Time.timeSinceLevelLoad;
+    }
 
     private void Update()
     {
@@ -178,5 +207,34 @@ public class CollectibleSpawnManager : MonoBehaviour
                 targetPos + Vector2.up * 1.5f // 绘制向上的指示线
             );
         }
+    }
+
+    private void OnGUI()
+    {
+        if (!showDebugInfo) return;
+        
+        // 创建GUI背景矩形
+        Rect backgroundRect = new Rect(
+            guiPosition.x, 
+            guiPosition.y, 
+            200, 
+            40
+        );
+        
+        // 创建文本显示矩形（稍微内缩）
+        Rect textRect = new Rect(
+            guiPosition.x + 10, 
+            guiPosition.y + 10, 
+            180, 
+            20
+        );
+        
+        // 绘制背景
+        GUI.backgroundColor = backgroundColor;
+        GUI.Box(backgroundRect, "");
+        
+        // 格式化并显示时间（保留两位小数）
+        string timeText = $"游戏时间: {currentGameTime:F2}秒";
+        GUI.Label(textRect, timeText, guiStyle);
     }
 }
