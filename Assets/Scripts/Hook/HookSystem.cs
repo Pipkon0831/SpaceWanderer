@@ -552,18 +552,16 @@ public class HookSystem : MonoBehaviour
     {
         if (hookTip == null) return;
 
-        // 将角度转换为弧度（三角函数需要弧度）
+        // 计算方向向量（原有逻辑）
         float radians = currentRotation * Mathf.Deg2Rad;
-        // 计算方向向量（基于角度的单位向量）
         Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
-        // 计算钩爪尖端位置：当前位置 + 方向 × 长度
         Vector2 hookTipPos = (Vector2)transform.position + direction * currentLength;
-        // 设置位置（保持Z轴与父物体一致）
         hookTip.position = new Vector3(hookTipPos.x, hookTipPos.y, transform.position.z);
 
-        // 计算钩爪尖端朝向（与方向一致）
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg; // 弧度→角度
-        hookTip.rotation = Quaternion.Euler(0, 0, angle); // 设置旋转
+        // 计算角度时增加90度补偿（核心修改）
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        angle += 90f; // 抵消逆时针90度偏差（若偏差为顺时针，可减90f）
+        hookTip.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     /// 更新绳索路径（起点：自身位置，终点：钩爪尖端位置）
