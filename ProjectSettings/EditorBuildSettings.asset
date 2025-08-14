@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FunctionalTesting.unity
     guid: 73546138053a19c498446a7c3ecafff1
+  - enabled: 1
+    path: Assets/Scenes/Level-1.unity
+    guid: 9295709c8b962de42a5bc14a995e6488
   m_configObjects: {}
