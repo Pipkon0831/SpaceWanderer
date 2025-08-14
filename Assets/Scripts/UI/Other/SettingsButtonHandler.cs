@@ -6,7 +6,6 @@ using System.Collections.Generic;
 public class SettingsButtonHandler : MonoBehaviour
 {
     [Header("设置")]
-    [SerializeField] private GameObject windowPrefab;
     [SerializeField] private bool useOverlay = true;
     [SerializeField] private Color overlayColor = new Color(0, 0, 0, 0.5f);
     [SerializeField] private int baseSortingOrder = 10;
@@ -18,31 +17,61 @@ public class SettingsButtonHandler : MonoBehaviour
     private GameObject currentWindow;
     private GameObject overlay;
     private List<Selectable> disabledUIElements = new List<Selectable>();
+    private bool isWindowOpen = false;
 
     private void Start()
     {
         spawnButton = GetComponent<Button>();
         if (spawnButton != null)
         {
-            spawnButton.onClick.AddListener(SpawnWindow);
+            spawnButton.onClick.AddListener(ToggleSettingsWindow);
         }
         else
         {
             Debug.LogError("当前物体上没有Button组件！");
         }
+
+        // 确保AudioManager单例存在
+        if (AudioManager.Instance == null)
+        {
+            Debug.LogError("场景中没有找到AudioManager单例！");
+        }
     }
 
     public bool IsWindowOpen()
     {
-        return currentWindow != null;
+        return isWindowOpen;
     }
 
-    private void SpawnWindow()
+    private void ToggleSettingsWindow()
     {
-        if (currentWindow != null) return;
+        if (AudioManager.Instance == null) return;
 
-        currentWindow = Instantiate(windowPrefab);
-        currentWindow.name = windowPrefab.name + "(Clone)";
+        if (isWindowOpen)
+        {
+            CloseWindow();
+        }
+        else
+        {
+            ShowSettings();
+        }
+    }
+
+    private void ShowSettings()
+    {
+        if (isWindowOpen || AudioManager.Instance == null) return;
+
+        // 调用AudioManager的显示方法
+        AudioManager.Instance.ShowSettingCanvus();
+        
+        // 从AudioManager获取设置界面引用
+        currentWindow = AudioManager.Instance.GetSettingCanvas();
+        
+        if (currentWindow == null)
+        {
+            Debug.LogError("从AudioManager获取的设置界面为空！");
+            return;
+        }
 
         Canvas windowCanvas = EnsureCanvasExists();
         PositionWindowInCenter();
@@ -55,6 +84,7 @@ public class SettingsButtonHandler : MonoBehaviour
         DisableOtherUI();
         BindCloseEvent();
 
+        isWindowOpen = true;
         OnWindowOpened?.Invoke();
     }
 
@@ -86,6 +116,12 @@ public class SettingsButtonHandler : MonoBehaviour
 
     private void CreateOverlayAsChild(Transform parent, Canvas windowCanvas)
     {
+        // 如果已有遮罩则先销毁
+        if (overlay != null)
+        {
+            Destroy(overlay);
+        }
+
         overlay = new GameObject("Overlay");
         overlay.transform.SetParent(parent);
 
@@ -133,8 +169,10 @@ public class SettingsButtonHandler : MonoBehaviour
         }
     }
 
-    private void CloseWindow()
+    public void CloseWindow()
     {
+        if (!isWindowOpen) return;
+
         foreach (Selectable ui in disabledUIElements)
         {
             if (ui != null) ui.interactable = true;
@@ -143,11 +181,21 @@ public class SettingsButtonHandler : MonoBehaviour
 
         if (currentWindow != null)
         {
-            Destroy(currentWindow);
+            // 通知AudioManager隐藏设置界面
+            if (AudioManager.Instance != null)
+            {
+                //AudioManager.Instance.HideSettingCanvas();
+            }
             currentWindow = null;
+        }
+
+        if (overlay != null)
+        {
+            Destroy(overlay);
             overlay = null;
         }
 
+        isWindowOpen = false;
         OnWindowClosed?.Invoke();
     }
 
@@ -155,7 +203,7 @@ public class SettingsButtonHandler : MonoBehaviour
     {
         if (spawnButton != null)
         {
-            spawnButton.onClick.RemoveListener(SpawnWindow);
+            spawnButton.onClick.RemoveListener(ToggleSettingsWindow);
         }
     }
-}    
+}
