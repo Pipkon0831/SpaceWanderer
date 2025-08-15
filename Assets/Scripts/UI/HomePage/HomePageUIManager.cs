@@ -39,16 +39,16 @@ public class HomePageUIManager : MonoBehaviour
 
     #region 设置悬浮窗配置
     [Header("设置悬浮窗配置")]
-    public GameObject settingWindowPrefab; // 悬浮窗预制体
     public bool useOverlay = true; // 是否使用遮罩层
     public Color overlayColor = new Color(0, 0, 0, 0.5f); // 遮罩颜色
     public int baseSortingOrder = 10; // 基础层级
     [Tooltip("悬浮窗内部关闭按钮的名称")]
     public string closeButtonName = "CloseButton"; // 关闭按钮名称
 
-    private GameObject currentSettingWindow; // 当前悬浮窗
-    private GameObject overlay; // 遮罩层
+    private GameObject currentSettingWindow; // 当前悬浮窗（从AudioManager获取）
+    private GameObject overlay; // 遮罩层（动态创建，随窗口隐藏销毁）
     private List<Selectable> disabledUIElements = new List<Selectable>(); // 记录被禁用的UI
+    private bool isSettingWindowOpen = false; // 窗口状态标记
     #endregion
 
 
@@ -59,14 +59,22 @@ public class HomePageUIManager : MonoBehaviour
         {
             Instance = this;
         }
+        else
+        {
+            Destroy(gameObject);
+        }
+
+        // 检查AudioManager单例是否存在
+        if (AudioManager.Instance == null)
+        {
+            Debug.LogError("HomePageUIManager: 场景中未找到AudioManager单例！");
+        }
     }
 
     private void Start()
     {
         InitButtonEvents();
-
         ShowTargetPanel();
-
         TargetPanelOnLoad = ExitButtonHandler.TargetPanel.StartPanel;
     }
 
@@ -105,7 +113,11 @@ public class HomePageUIManager : MonoBehaviour
         if (backToThemeButton_2 == null) Debug.LogError("HomePageUIManager: backToThemeButton_2 未赋值！");
         if (backToThemeButton_3 == null) Debug.LogError("HomePageUIManager: backToThemeButton_3 未赋值！");
 
-        if (settingWindowPrefab == null) Debug.LogError("HomePageUIManager: settingWindowPrefab 未赋值！");
+        // 检查AudioManager的设置窗口是否赋值
+        if (AudioManager.Instance != null && AudioManager.Instance.GetSettingCanvas() == null)
+        {
+            Debug.LogError("HomePageUIManager: AudioManager中未赋值settingCanvas！");
+        }
     }
     #endregion
 
@@ -119,7 +131,8 @@ public class HomePageUIManager : MonoBehaviour
         levelSelectPanel_Theme2.SetActive(targetPanel == levelSelectPanel_Theme2);
         levelSelectPanel_Theme3.SetActive(targetPanel == levelSelectPanel_Theme3);
 
-        if (currentSettingWindow != null)
+        // 切换主面板时自动关闭设置窗口
+        if (isSettingWindowOpen)
         {
             CloseSettingWindow();
         }
@@ -169,29 +182,40 @@ public class HomePageUIManager : MonoBehaviour
 
 
     #region 设置悬浮窗管理
-    // 点击设置按钮：创建悬浮窗
+    // 点击设置按钮：显示设置窗口（从AudioManager获取）
     public void OnClick_Setting()
     {
-        if (currentSettingWindow != null) return;
+        if (isSettingWindowOpen || AudioManager.Instance == null) return;
 
-        currentSettingWindow = Instantiate(settingWindowPrefab);
-        currentSettingWindow.name = $"{settingWindowPrefab.name}_Instance";
+        // 调用AudioManager显示窗口并获取引用
+        AudioManager.Instance.ShowSettingCanvus();
+        currentSettingWindow = AudioManager.Instance.GetSettingCanvas();
 
+        if (currentSettingWindow == null)
+        {
+            Debug.LogError("HomePageUIManager: 从AudioManager获取的设置窗口为空！");
+            return;
+        }
+
+        // 窗口基础配置
         SetupWindowCanvas();
-
         CenterWindow();
 
+        // 创建遮罩（若启用）
         if (useOverlay)
         {
             CreateOverlay();
         }
 
+        // 禁用其他UI+绑定关闭按钮
         DisableOtherUI();
-
         BindInnerCloseButton();
+
+        // 更新窗口状态
+        isSettingWindowOpen = true;
     }
 
-    // 设置悬浮窗的Canvas组件
+    // 设置窗口Canvas层级
     private void SetupWindowCanvas()
     {
         Canvas windowCanvas = currentSettingWindow.GetComponent<Canvas>();
@@ -206,7 +230,7 @@ public class HomePageUIManager : MonoBehaviour
         windowCanvas.sortingOrder = baseSortingOrder + 1;
     }
 
-    // 悬浮窗居中显示
+    // 窗口居中显示
     private void CenterWindow()
     {
         RectTransform windowRect = currentSettingWindow.GetComponent<RectTransform>();
@@ -222,6 +246,9 @@ public class HomePageUIManager : MonoBehaviour
     // 创建遮罩层
     private void CreateOverlay()
     {
+        // 销毁旧遮罩避免重复
+        if (overlay != null) Destroy(overlay);
+
         overlay = new GameObject("Overlay");
         overlay.transform.SetParent(currentSettingWindow.transform);
 
@@ -243,7 +270,7 @@ public class HomePageUIManager : MonoBehaviour
         overlayButton.onClick.AddListener(CloseSettingWindow);
     }
 
-    // 禁用其他UI元素
+    // 禁用其他UI交互
     private void DisableOtherUI()
     {
         Selectable[] allUI = FindObjectsOfType<Selectable>(true);
@@ -260,7 +287,7 @@ public class HomePageUIManager : MonoBehaviour
         }
     }
 
-    // 绑定悬浮窗内部的关闭按钮
+    // 绑定窗口内部关闭按钮
     private void BindInnerCloseButton()
     {
         Button closeButton = null;
@@ -282,28 +309,42 @@ public class HomePageUIManager : MonoBehaviour
         if (closeButton != null)
         {
             closeButton.onClick.AddListener(CloseSettingWindow);
-            Debug.Log($"已绑定悬浮窗内的关闭按钮：{closeButton.name}");
+            Debug.Log($"HomePageUIManager: 已绑定设置窗口关闭按钮：{closeButton.name}");
         }
         else
         {
-            Debug.LogWarning($"悬浮窗预制体中未找到关闭按钮！请确保存在名为'{closeButtonName}'的按钮");
+            Debug.LogWarning($"HomePageUIManager: 设置窗口中未找到关闭按钮（名称：{closeButtonName}）！");
         }
     }
 
-    // 关闭悬浮窗
+    // 关闭设置窗口（隐藏而非销毁）
     public void CloseSettingWindow()
     {
-        if (currentSettingWindow == null) return;
+        if (!isSettingWindowOpen || currentSettingWindow == null) return;
 
+        // 恢复其他UI交互
         foreach (Selectable ui in disabledUIElements)
         {
             if (ui != null) ui.interactable = true;
         }
         disabledUIElements.Clear();
 
-        Destroy(currentSettingWindow);
+        // 调用AudioManager隐藏窗口
+        if (AudioManager.Instance != null)
+        {
+            //AudioManager.Instance.HideSettingCanvas();
+        }
+
+        // 销毁动态遮罩
+        if (overlay != null)
+        {
+            Destroy(overlay);
+            overlay = null;
+        }
+
+        // 重置状态
+        isSettingWindowOpen = false;
         currentSettingWindow = null;
-        overlay = null;
     }
     #endregion
 

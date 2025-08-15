@@ -27,7 +27,7 @@ public class SettingButton : MonoBehaviour
     {
         if (targetCanvas != null)
         {
-            Destroy(targetCanvas.gameObject);
+            targetCanvas.gameObject.SetActive(false);
         }
     }
 }
