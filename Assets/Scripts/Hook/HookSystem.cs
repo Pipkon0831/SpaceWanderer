@@ -39,6 +39,8 @@ public class HookSystem : MonoBehaviour
     public float baseLaunchSpeed = 10f;
     [Tooltip("基础回收速度")]
     public float baseRetrieveSpeed = 10f;
+    [Tooltip("空钩回收速度")]
+    public float nullRetrieveSpeed = 100f; // 空钩爪回收速度
     [Tooltip("飞船质量")]
     public float spaceShipMass = 10f;
     
@@ -499,6 +501,7 @@ public class HookSystem : MonoBehaviour
     /// 计算目标回收速度（受抓取质量影响）
     private float CalculateTargetRetrieveSpeed()
     {
+        if(grabbedMass == 0) return nullRetrieveSpeed; // 无抓取质量时使用基础速度
         float massResistance = 1 + grabbedMass; // 质量阻力：抓取质量越大，阻力越大
         float baseSpeed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed; // 基础速度（加速/正常）
         // 回收速度 = 基础速度 × 2 / 阻力（确保质量越大速度越慢，保留一个最低值）
