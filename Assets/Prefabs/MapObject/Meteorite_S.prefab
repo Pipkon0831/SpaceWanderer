@@ -129,8 +129,8 @@ MonoBehaviour:
   laserCount: 0
   netCount: 0
   mass: 5
-  health: 1
-  maxHealth: 1
+  health: 100
+  maxHealth: 100
   initialSpeed: 0
   initialDirection: {x: 0, y: -1}
   initialAngularSpeed: 0
