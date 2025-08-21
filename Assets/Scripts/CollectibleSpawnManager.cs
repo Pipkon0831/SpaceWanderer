@@ -37,8 +37,16 @@ public class CollectibleSpawnManager : MonoBehaviour
     public List<SpawnData> spawnConfigs = new List<SpawnData>();
 
     [Header("调试设置")]
-    [Tooltip("是否显示调试信息")]
-    public bool showDebugInfo = true;
+    private bool showDebugInfo = true;
+    
+    [Tooltip("是否显示移动路径")]
+    public bool showPathGizmos = true;
+    
+    [Tooltip("路径线条颜色")]
+    public Color pathColor = Color.yellow;
+    
+    [Tooltip("生成点标记颜色")]
+    public Color spawnPointColor = Color.blue;
 
     [Header("GUI设置")]
     [Tooltip("GUI显示位置")]
@@ -53,7 +61,7 @@ public class CollectibleSpawnManager : MonoBehaviour
     [Tooltip("GUI字体大小")]
     public int fontSize = 36;
 
-    // 统一游戏时间（自游戏开始统一游戏时间（自游戏开始后秒数）
+    // 统一游戏时间（自游戏开始后秒数）
     private float currentGameTime = 0f;
     private GUIStyle guiStyle; // 用于存储GUI样式
     private GUIStyleState guiStyleState; // 用于存储GUI样式状态
@@ -194,20 +202,67 @@ public class CollectibleSpawnManager : MonoBehaviour
         return true;
     }
 
-    private void OnDrawGizmos()
+private void OnDrawGizmos()
+{
+    // 绘制目标位置辅助线（场景视图可视化）
+    foreach (var config in spawnConfigs)
     {
-        // 绘制目标位置辅助线（场景视图可视化）
-        foreach (var config in spawnConfigs)
+        // 跳过无效配置
+        if (!IsConfigValid(config)) continue;
+        
+        // 获取目标位置
+        Vector2 targetPos = new Vector2(config.targetX, config.targetY);
+        
+        // 绘制目标位置标记
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(targetPos, 0.5f); // 目标位置标记（2D圆形）
+        Gizmos.DrawLine(targetPos, targetPos + Vector2.up * 1.5f); // 绘制向上的指示线
+        
+        // 如果启用了路径显示，计算并绘制移动路径
+        if (showPathGizmos && !config.hasSpawned)
         {
-            Vector2 targetPos = new Vector2(config.targetX, config.targetY);
-            Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(targetPos, 0.5f); // 目标位置标记（2D圆形）
-            Gizmos.DrawLine(
-                targetPos, 
-                targetPos + Vector2.up * 1.5f // 绘制向上的指示线
-            );
+            // 获取预制体组件以计算路径
+            CollectibleObject prefabCollectible = config.collectiblePrefab.GetComponent<CollectibleObject>();
+            if (prefabCollectible != null)
+            {
+                // 计算生成位置
+                float moveDuration = config.targetArrivalTime - config.spawnTime;
+                if (moveDuration > 0)
+                {
+                    Vector2 velocityDir = prefabCollectible.initialDirection;
+                    float speed = prefabCollectible.initialSpeed;
+                    Vector2 movementVelocity = velocityDir * speed;
+                    Vector2 spawnPosition = targetPos - movementVelocity * moveDuration;
+                    
+                    // 绘制生成点标记
+                    Gizmos.color = spawnPointColor;
+                    Gizmos.DrawWireSphere(spawnPosition, 0.3f);
+                    
+                    // 绘制移动路径射线
+                    Gizmos.color = pathColor;
+                    Gizmos.DrawLine(spawnPosition, targetPos);
+                    
+                    // 绘制路径方向箭头（修复向量类型不匹配问题）
+                    Vector2 direction = (targetPos - spawnPosition).normalized;
+                    
+                    // 将Vector2转换为Vector3进行旋转计算，再转回Vector2
+                    Vector3 dir3D = new Vector3(direction.x, direction.y, 0);
+                    Vector3 rotatedDir1 = Quaternion.Euler(0, 0, 30) * dir3D;
+                    Vector3 rotatedDir2 = Quaternion.Euler(0, 0, -30) * dir3D;
+                    
+                    // 计算箭头尖端位置
+                    Vector2 arrowTip1 = targetPos - direction * 0.3f - new Vector2(rotatedDir1.x, rotatedDir1.y) * 0.2f;
+                    Vector2 arrowTip2 = targetPos - direction * 0.3f - new Vector2(rotatedDir2.x, rotatedDir2.y) * 0.2f;
+                    
+                    // 绘制箭头
+                    Gizmos.DrawLine(targetPos, arrowTip1);
+                    Gizmos.DrawLine(targetPos, arrowTip2);
+                }
+            }
         }
     }
+}
+
 
     private void OnGUI()
     {
