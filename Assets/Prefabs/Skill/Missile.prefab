@@ -143,6 +143,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   explosionRadius: 2
   maxRange: 20
-  explosionDamage: 75
+  explosionDamage: 110
   capsuleLength: 1
   capsuleRadius: 0.3

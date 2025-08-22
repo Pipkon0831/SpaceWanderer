@@ -124,7 +124,7 @@ MonoBehaviour:
   isFixedObject: 0
   subType: 0
   currentState: 0
-  scoreValue: 400
+  scoreValue: 500
   missileCount: 0
   laserCount: 0
   netCount: 0

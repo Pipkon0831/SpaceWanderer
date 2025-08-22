@@ -133,7 +133,7 @@ MonoBehaviour:
   maxHealth: 100
   initialSpeed: 1
   initialDirection: {x: 0.45, y: 1}
-  initialAngularSpeed: 0.1
+  initialAngularSpeed: 35
   initialRotationApplied: 0
   destroyedMomentum: 9999
   damageCoefficient: 0.5
