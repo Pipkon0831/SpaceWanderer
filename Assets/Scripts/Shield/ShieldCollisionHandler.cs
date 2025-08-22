@@ -14,11 +14,13 @@ public class ShieldCollisionHandler : MonoBehaviour
     [Tooltip("护盾伤害系数（影响最终受到的伤害值）")]
     public float shieldDamageCoefficient = 0.8f;
 
-    [Header("反馈设置")]
-    [Tooltip("护盾被击中时的特效预制体")]
-    public GameObject hitEffectPrefab;
-    [Tooltip("是否显示调试信息")]
-    public bool showDebugInfo = true;
+    [Header("反弹配置")]
+    [Tooltip("反弹速度倍率：1=保持原速度大小反向，>1=增强反向速度，<1=减弱反向速度")]
+    public float bounceSpeedMultiplier = 5f;
+
+    [HideInInspector] public GameObject hitEffectPrefab;
+    private GameObject bounceEffectPrefab;
+    private bool showDebugInfo = true;
 
     // 事件声明
     public System.Action<float> onShieldHealthChanged;
@@ -26,6 +28,7 @@ public class ShieldCollisionHandler : MonoBehaviour
 
     private HookSystem hookSystem;
     private Rigidbody2D shieldRigidbody;
+    private float shieldMass; // 护盾（或飞船）的总质量
 
     private void Start()
     {
@@ -33,13 +36,17 @@ public class ShieldCollisionHandler : MonoBehaviour
         hookSystem = HookSystem.Instance;
         shieldRigidbody = GetComponentInParent<Rigidbody2D>();
         
+        // 初始化护盾质量
+        if (hookSystem != null)
+            shieldMass = hookSystem.spaceShipMass;
+        else if (shieldRigidbody != null)
+            shieldMass = shieldRigidbody.mass;
+        else
+            shieldMass = 100f; // 默认质量（避免计算错误）
+
         if (shieldRigidbody == null)
         {
-            shieldRigidbody = GetComponent<Rigidbody2D>();
-            if (shieldRigidbody == null)
-            {
-                Debug.LogWarning("护盾未找到Rigidbody2D组件，碰撞物理计算将受影响");
-            }
+            Debug.LogWarning("护盾未找到Rigidbody2D组件，碰撞物理计算将受影响");
         }
     }
 
@@ -60,40 +67,66 @@ public class ShieldCollisionHandler : MonoBehaviour
         // 忽略已销毁状态的物体
         if (collideObject.isDestroyedState()) return;
 
-        // 执行碰撞伤害计算
+        // 执行碰撞逻辑（伤害计算 + 反向反弹）
         HandleShieldCollision(collideObject, collision);
     }
 
     private void HandleShieldCollision(CollectibleObject collideObject, Collision2D collision)
     {
-        if (hookSystem == null || shieldRigidbody == null) return;
+        if (shieldRigidbody == null) return;
 
-        // 1. 获取核心物理参数
-        float shipMass = hookSystem.spaceShipMass;
+        // 原有逻辑：伤害计算
         float objectMass = collideObject.mass;
-        float reducedMass = (shipMass * objectMass) / (shipMass + objectMass);
-
-        // 2. 计算相对速度
+        float reducedMass = (shieldMass * objectMass) / (shieldMass + objectMass);
         Vector2 relativeVelocity = collision.relativeVelocity;
         float relativeSpeed = relativeVelocity.magnitude;
-
-        // 3. 计算有效动量
         float effectiveMomentum = reducedMass * relativeSpeed;
-
-        // 4. 计算护盾受到的最终伤害
         float shieldDamage = effectiveMomentum * collideObject.damageCoefficient * shieldDamageCoefficient;
 
         if (showDebugInfo)
         {
             Debug.Log($"=== 护盾碰撞计算 ===");
             Debug.Log($"碰撞物: {collideObject.name} (质量: {objectMass})");
-            Debug.Log($"飞船质量: {shipMass}, 约化质量: {reducedMass:F2}");
-            Debug.Log($"相对速度: {relativeSpeed:F2}, 有效动量: {effectiveMomentum:F2}");
-            Debug.Log($"护盾伤害: {shieldDamage:F2} (剩余生命值: {currentShieldHealth - shieldDamage:F2})");
+            Debug.Log($"护盾质量: {shieldMass}, 约化质量: {reducedMass:F2}");
+            Debug.Log($"相对速度: {relativeSpeed:F2}, 护盾伤害: {shieldDamage:F2}");
         }
 
-        // 5. 应用伤害到护盾
+        // 反向反弹逻辑（核心修改）
+        ReverseDirectionBounce(collideObject);
+
+        // 应用伤害到护盾
         TakeDamage(shieldDamage, collision.GetContact(0).point);
+    }
+
+    // 核心：将物体反弹方向改为原速度的反向
+    private void ReverseDirectionBounce(CollectibleObject collideObject)
+    {
+        // 获取碰撞物的刚体
+        Rigidbody2D objRb = collideObject.GetComponent<Rigidbody2D>();
+        if (objRb == null)
+        {
+            if (showDebugInfo)
+                Debug.LogWarning($"碰撞物 {collideObject.name} 缺少Rigidbody2D组件，无法反弹！");
+            return;
+        }
+
+        // 保存原速度用于调试
+        Vector2 originalVelocity = objRb.velocity;
+
+        // 计算反向速度（原速度 × -1 × 倍率）
+        Vector2 reversedVelocity = originalVelocity * -1f * bounceSpeedMultiplier;
+
+        // 应用反向速度
+        objRb.velocity = reversedVelocity;
+
+        // 调试信息
+        if (showDebugInfo)
+        {
+            Debug.Log($"=== 反向反弹信息 ===");
+            Debug.Log($"物体: {collideObject.name}");
+            Debug.Log($"原速度: {originalVelocity:F2} → 反向后速度: {reversedVelocity:F2}");
+            Debug.Log($"速度大小变化: {originalVelocity.magnitude:F2} → {reversedVelocity.magnitude:F2}");
+        }
     }
 
     private void TakeDamage(float damage, Vector2 hitPoint)

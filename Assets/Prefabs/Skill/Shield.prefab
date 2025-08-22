@@ -120,8 +120,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 157841fbeeaa92244a361f79a028b927, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  destructibleTags:
+  targetTags:
   - Obstacle
+  - Collectible
+  maxShieldHealth: 100
+  currentShieldHealth: 0
+  shieldDamageCoefficient: 0.8
+  bounceSpeedMultiplier: 5
+  hitEffectPrefab: {fileID: 0}
 --- !u!60 &-7970029013984465239
 PolygonCollider2D:
   m_ObjectHideFlags: 0
