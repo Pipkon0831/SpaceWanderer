@@ -81,6 +81,7 @@ public class HomePageUIManager : MonoBehaviour
         InitButtonEvents(); // 初始化按钮事件（含音效绑定）
         ShowTargetPanel();  // 显示目标面板
         TargetPanelOnLoad = ExitButtonHandler.TargetPanel.StartPanel; // 重置返回面板标记
+        AudioManager.Instance.PlayMusic(0);
     }
 
 

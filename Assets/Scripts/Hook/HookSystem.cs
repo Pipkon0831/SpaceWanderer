@@ -173,6 +173,7 @@ public class HookSystem : MonoBehaviour
     /// 初始化钩爪尖端和初始状态
     private void Start()
     {
+        AudioManager.Instance.PlayMusic(1);
         InitFromPrefabs(); // 从预制体初始化钩爪尖端
         Init(); // 初始化状态变量
         if (hookTip != null)
