@@ -8193,10 +8193,14 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 92491fb280c636e4fb6c1b49cfa8c68d, type: 3}
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: backgroundMusics.Array.size
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: backgroundMusics.Array.data[0]
+      value: 
+      objectReference: {fileID: 8300000, guid: 9bf7fc4a8b9c242428bb843aa1fcdf78, type: 3}
+    - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
+      propertyPath: backgroundMusics.Array.data[1]
       value: 
       objectReference: {fileID: 8300000, guid: ae7f842679e9766418f585a02af30f4a, type: 3}
     - target: {fileID: 2300381659196261839, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
