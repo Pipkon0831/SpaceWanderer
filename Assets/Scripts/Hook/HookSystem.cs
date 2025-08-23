@@ -441,6 +441,7 @@ public class HookSystem : MonoBehaviour
         float heatChange = -heatDissipationPower * deltaTime; // 散出的热量（负号表示减少）
         float temperatureChange = heatChange / c; // 温度变化 = 热量变化 / 热容量
         currentTemperature += temperatureChange; // 更新温度（可能降低）
+        currentTemperature = Mathf.Max(0, currentTemperature); // 确保温度不低于0
 
         // 过热状态管理
         switch (currentOverheatState)
@@ -451,10 +452,6 @@ public class HookSystem : MonoBehaviour
                 {
                     currentOverheatState = OverheatState.Overheating;
                     currentOverheatTime = 0f; // 重置过热时间
-                    Warning_Sound = AudioManager.Instance.StartLoopSound(6);
-                    
-                    // 过热时停止速度音效
-                    StopAllSpeedSounds();
                 }
                 else
                 {
@@ -475,8 +472,6 @@ public class HookSystem : MonoBehaviour
                     // 触发冷却事件，通知护盾关闭
                     OnOverheatEnterCooling?.Invoke();
                     isAccelerating = false;
-                    AudioManager.Instance.StopLoopSound(Warning_Sound);
-                    AudioManager.Instance.PlaySoundEffect(5);
                 }
                 break;
             case OverheatState.Cooling:
@@ -488,6 +483,25 @@ public class HookSystem : MonoBehaviour
                     currentOverheatState = OverheatState.Normal;
                 }
                 break;
+        }
+
+        // 警报音效实时控制（绑定温度阈值）
+        // 条件1：温度 ≥ 阈值 → 启动警报（未播放时）
+        if (currentTemperature >= overheatThreshold && Warning_Sound == null)
+        {
+            Warning_Sound = AudioManager.Instance.StartLoopSound(6); // 启动循环警报
+            StopAllSpeedSounds(); // 同时停止速度音效
+        }
+        // 条件2：温度 < 阈值 → 停止警报（已播放时）
+        else if (currentTemperature < overheatThreshold && Warning_Sound != null)
+        {
+            AudioManager.Instance.StopLoopSound(Warning_Sound); // 停止循环警报
+            Warning_Sound = null; // 重置音效实例，避免重复停止
+            // 过热超时冷却时播放“冷却开始”音效
+            if (currentOverheatState == OverheatState.Cooling)
+            {
+                AudioManager.Instance.PlaySoundEffect(5);
+            }
         }
 
         // 计算目标旋转速度（非切换状态下）
