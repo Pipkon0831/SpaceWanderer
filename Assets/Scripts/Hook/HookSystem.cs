@@ -111,6 +111,9 @@ public class HookSystem : MonoBehaviour
     [Tooltip("用于检测屏幕边界的主相机")]
     public Camera mainCamera;
 
+    [Header("速度音效配置")]
+    public int speedSoundIndex = 7; // 速度音效在AudioManager中的索引
+
     [HideInInspector] public HookState currentState = HookState.ReadyToLaunch; // 当前钩爪状态
     [HideInInspector] public RotationDir currentDir = RotationDir.Clockwise; // 当前旋转方向
     [HideInInspector] public float currentLength = 0f; // 钩爪当前长度
@@ -135,6 +138,16 @@ public class HookSystem : MonoBehaviour
     private LineRenderer ropeRenderer; // 绳索渲染器
     private Transform hookTip; // 钩爪尖端Transform
     private HookTipCollisionHandler hookTipCollisionHandler; // 钩爪尖端碰撞处理器
+    
+    private AudioSource hookLaunchAudioSource; // 钩爪发射音效
+    private AudioSource hookRetrieveAudioSource; // 钩爪回收音效
+    private AudioSource Warning_Sound; // 过热音效
+    
+    // 速度音效相关变量
+    private AudioSource _speedLow; // 正常运行（发射/回收）低速音效
+    private AudioSource _speedFast; // 加速回收高速音效
+    private bool _isSpeedLowPlaying = false; // 低速音效播放状态标记
+    private bool _isSpeedFastPlaying = false; // 高速音效播放状态标记
 
     public static HookSystem Instance; // 单例实例
 
@@ -142,7 +155,7 @@ public class HookSystem : MonoBehaviour
 
     private float grabbedMass = 0f; // 抓取物体的总质量
 
-    // 新增：过热进入冷却状态时的事件通知
+    // 过热进入冷却状态时的事件通知
     public event System.Action OnOverheatEnterCooling;
 
     /// 初始化单例和绳索渲染器
@@ -168,6 +181,12 @@ public class HookSystem : MonoBehaviour
             hookTipCollisionHandler.hookSystem = this; // 关联钩爪系统到碰撞处理器
         }
         InitUI(); // 初始化UI显示
+
+        // 初始化速度音效状态
+        _speedLow = null;
+        _speedFast = null;
+        _isSpeedLowPlaying = false;
+        _isSpeedFastPlaying = false;
     }
 
     /// 设置绳索渲染器（LineRenderer）的基础属性
@@ -250,6 +269,14 @@ public class HookSystem : MonoBehaviour
 
         grabbedMass = 0f; // 初始无抓取质量
 
+        // 停止所有音效
+        StopAllSpeedSounds();
+        if (Warning_Sound != null)
+        {
+            AudioManager.Instance.StopLoopSound(Warning_Sound);
+            Warning_Sound = null;
+        }
+
         UpdateUIDisplay(); // 更新UI
     }
     
@@ -263,6 +290,9 @@ public class HookSystem : MonoBehaviour
         UpdateHookPosition(); // 更新钩爪位置
         
         UpdateUIDisplay(); // 更新UI显示
+
+        // 帧末检查音效状态（避免状态同步延迟）
+        CheckSpeedSoundState();
     }
 
     /// 延迟更新：在位置更新后更新绳索路径（避免位置不同步）
@@ -336,11 +366,19 @@ public class HookSystem : MonoBehaviour
     /// 更新钩爪状态（旋转、发射、回收、过热逻辑）
     private void UpdateState(float deltaTime)
     {
+        // 保存上一帧状态（用于检测状态切换）
+        HookState previousState = currentState;
+
         // 根据当前状态更新行为
         switch (currentState)
         {
             case HookState.ReadyToLaunch:
                 UpdateRotation(deltaTime); // 待命状态：旋转
+                // 从发射/回收切回待命时，停止所有速度音效
+                if (previousState != HookState.ReadyToLaunch)
+                {
+                    StopAllSpeedSounds();
+                }
                 break;
             case HookState.Launching:
                 UpdateLaunching(deltaTime); // 发射中：增加长度
@@ -349,9 +387,26 @@ public class HookSystem : MonoBehaviour
                 {
                     RetrieveHook();
                 }
+                // 从待命/回收切到发射时，启动低速音效
+                if (previousState != HookState.Launching && !_isSpeedLowPlaying && !_isSpeedFastPlaying)
+                {
+                    StartSpeedLowSound();
+                }
                 break;
             case HookState.Retrieving:
                 UpdateRetrieving(deltaTime); // 回收中：减少长度
+                // 从待命/发射切到回收时，根据是否加速启动对应音效
+                if (previousState != HookState.Retrieving)
+                {
+                    if (isAccelerating)
+                    {
+                        StartSpeedFastSound();
+                    }
+                    else
+                    {
+                        StartSpeedLowSound();
+                    }
+                }
                 break;
         }
 
@@ -395,7 +450,10 @@ public class HookSystem : MonoBehaviour
                 {
                     currentOverheatState = OverheatState.Overheating;
                     currentOverheatTime = 0f; // 重置过热时间
-                    //isAccelerating = false; // 过热时禁止加速
+                    Warning_Sound = AudioManager.Instance.StartLoopSound(6);
+                    
+                    // 过热时停止速度音效
+                    StopAllSpeedSounds();
                 }
                 else
                 {
@@ -409,18 +467,21 @@ public class HookSystem : MonoBehaviour
                     if (grabbedMass > 0 && currentState == HookState.Retrieving)
                     {
                         ReleaseGrabbedObjects(); // 过热时释放抓取的物体
+                        StopAllSpeedSounds(); // 过热释放物体时停止速度音效
                     }
                     currentOverheatState = OverheatState.Cooling;
                     currentOverheatTime = 0f;
-                    // 修复2：触发冷却事件，通知护盾关闭
+                    // 触发冷却事件，通知护盾关闭
                     OnOverheatEnterCooling?.Invoke();
                     isAccelerating = false;
+                    AudioManager.Instance.StopLoopSound(Warning_Sound);
+                    AudioManager.Instance.PlaySoundEffect(5);
                 }
                 break;
             case OverheatState.Cooling:
                 // 冷却时温度降低（不低于0）
                 currentTemperature = Mathf.Max(0, currentTemperature - coolingRate * deltaTime);
-                // 温度降至0→回到正常状态
+                // 温度降至阈值以下→回到正常状态
                 if (currentTemperature <= overheatThreshold)
                 {
                     currentOverheatState = OverheatState.Normal;
@@ -450,6 +511,10 @@ public class HookSystem : MonoBehaviour
         float currentRecoverLength = currentLength; // 记录当前长度
         currentState = HookState.ReadyToLaunch; // 临时切换到待命状态（避免立即回收）
         currentLength = currentRecoverLength;
+        
+        // 释放物体时停止速度音效
+        StopAllSpeedSounds();
+        
         // 延迟0.1秒后恢复回收（避免状态冲突）
         Invoke(nameof(ResumeRetrieveAfterRelease), 0.1f);
     }
@@ -495,7 +560,22 @@ public class HookSystem : MonoBehaviour
         currentLaunchSpeed = Mathf.MoveTowards(currentLaunchSpeed, targetLaunch, launchStep); // 平滑移动到目标
 
         // 回收速度平滑过渡
+        float previousRetrieveSpeed = currentRetrieveSpeed;
         currentRetrieveSpeed = CalculateTargetRetrieveSpeed();
+
+        // 加速状态变化时切换速度音效
+        // 1. 从非加速→加速（回收中）：停止低速，启动高速
+        if (isAccelerating && !_isSpeedFastPlaying && currentState == HookState.Retrieving)
+        {
+            StopSpeedLowSound();
+            StartSpeedFastSound();
+        }
+        // 2. 从加速→非加速（回收中）：停止高速，启动低速
+        else if (!isAccelerating && _isSpeedFastPlaying && currentState == HookState.Retrieving)
+        {
+            StopSpeedFastSound();
+            StartSpeedLowSound();
+        }
     }
     
     /// 计算目标回收速度（受抓取质量影响）
@@ -555,15 +635,15 @@ public class HookSystem : MonoBehaviour
     {
         if (hookTip == null) return;
 
-        // 计算方向向量（原有逻辑）
+        // 计算方向向量
         float radians = currentRotation * Mathf.Deg2Rad;
         Vector2 direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians)).normalized;
         Vector2 hookTipPos = (Vector2)transform.position + direction * currentLength;
         hookTip.position = new Vector3(hookTipPos.x, hookTipPos.y, transform.position.z);
 
-        // 计算角度时增加90度补偿（核心修改）
+        // 计算角度时增加90度补偿
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        angle += 90f; // 抵消逆时针90度偏差（若偏差为顺时针，可减90f）
+        angle += 90f; // 抵消逆时针90度偏差
         hookTip.rotation = Quaternion.Euler(0, 0, angle);
     }
 
@@ -634,6 +714,7 @@ public class HookSystem : MonoBehaviour
     /// 增加分数
     public void AddScore(int amount)
     {
+        AudioManager.Instance.PlaySoundEffect(2);
         currentScore += amount;
         UpdateUIDisplay();
     }
@@ -652,7 +733,13 @@ public class HookSystem : MonoBehaviour
     /// 死亡处理
     private void Die()
     {
-        Debug.Log("寄了！"); // 输出死亡信息（可扩展为游戏结束逻辑）
+        Debug.Log("寄了！"); // 输出死亡信息
+        // 死亡时停止所有音效
+        StopAllSpeedSounds();
+        if (Warning_Sound != null)
+        {
+            AudioManager.Instance.StopLoopSound(Warning_Sound);
+        }
     }
 
     /// 当前发射速度
@@ -694,5 +781,96 @@ public class HookSystem : MonoBehaviour
     public void ResetGrabbedMass()
     {
         grabbedMass = 0f;
+    }
+
+    /// 速度音效控制方法
+    private void StartSpeedLowSound()
+    {
+        if (!_isSpeedLowPlaying && AudioManager.Instance != null && currentOverheatState == OverheatState.Normal)
+        {
+            // 停止可能残留的高速音效
+            StopSpeedFastSound();
+            
+            _speedLow = AudioManager.Instance.StartLoopSound(speedSoundIndex);
+            if (_speedLow != null)
+            {
+                _isSpeedLowPlaying = true;
+            }
+        }
+    }
+
+    private void StartSpeedFastSound()
+    {
+        if (!_isSpeedFastPlaying && AudioManager.Instance != null && currentOverheatState == OverheatState.Normal)
+        {
+            // 停止低速音效
+            StopSpeedLowSound();
+            
+            _speedFast = AudioManager.Instance.StartLoopSound(speedSoundIndex);
+            if (_speedFast != null)
+            {
+                _isSpeedFastPlaying = true;
+            }
+        }
+    }
+
+    private void StopSpeedLowSound()
+    {
+        if (_isSpeedLowPlaying && AudioManager.Instance != null && _speedLow != null)
+        {
+            AudioManager.Instance.StopLoopSound(_speedLow);
+            _isSpeedLowPlaying = false;
+            _speedLow = null;
+        }
+    }
+
+    private void StopSpeedFastSound()
+    {
+        if (_isSpeedFastPlaying && AudioManager.Instance != null && _speedFast != null)
+        {
+            AudioManager.Instance.StopLoopSound(_speedFast);
+            _isSpeedFastPlaying = false;
+            _speedFast = null;
+        }
+    }
+
+    private void StopAllSpeedSounds()
+    {
+        StopSpeedLowSound();
+        StopSpeedFastSound();
+    }
+
+    private void CheckSpeedSoundState()
+    {
+        // 低速音效应播未播：重新启动
+        if (currentState != HookState.ReadyToLaunch && !isAccelerating && !_isSpeedLowPlaying && _isSpeedFastPlaying == false)
+        {
+            StartSpeedLowSound();
+        }
+        // 高速音效应播未播：重新启动
+        else if (currentState == HookState.Retrieving && isAccelerating && !_isSpeedFastPlaying && _isSpeedLowPlaying == false)
+        {
+            StartSpeedFastSound();
+        }
+        // 待命状态下仍有音效：停止
+        else if (currentState == HookState.ReadyToLaunch && (_isSpeedLowPlaying || _isSpeedFastPlaying))
+        {
+            StopAllSpeedSounds();
+        }
+        // 过热状态下仍有音效：停止
+        else if (currentOverheatState != OverheatState.Normal && (_isSpeedLowPlaying || _isSpeedFastPlaying))
+        {
+            StopAllSpeedSounds();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // 销毁时停止所有音效
+        StopAllSpeedSounds();
+        if (Warning_Sound != null)
+        {
+            AudioManager.Instance.StopLoopSound(Warning_Sound);
+        }
     }
 }

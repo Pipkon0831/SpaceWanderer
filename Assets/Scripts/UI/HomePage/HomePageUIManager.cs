@@ -19,6 +19,11 @@ public class HomePageUIManager : MonoBehaviour
     public GameObject levelSelectPanel_Theme3;
     #endregion
 
+    #region 音效配置（新增：统一管理按钮音效索引）
+    [Header("按钮音效配置")]
+    public int buttonClickSoundIndex = 1; // 按钮点击音效在AudioManager中的索引（目标索引1）
+    #endregion
+
     #region 按钮引用
     [Header("StartPanel 按钮")]
     public Button startButton;
@@ -64,40 +69,84 @@ public class HomePageUIManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // 检查AudioManager单例是否存在
+        // 检查AudioManager单例是否存在（提前排查依赖问题）
         if (AudioManager.Instance == null)
         {
-            Debug.LogError("HomePageUIManager: 场景中未找到AudioManager单例！");
+            Debug.LogError("HomePageUIManager: 场景中未找到AudioManager单例！请确保AudioManager已在场景中配置。");
         }
     }
 
     private void Start()
     {
-        InitButtonEvents();
-        ShowTargetPanel();
-        TargetPanelOnLoad = ExitButtonHandler.TargetPanel.StartPanel;
+        InitButtonEvents(); // 初始化按钮事件（含音效绑定）
+        ShowTargetPanel();  // 显示目标面板
+        TargetPanelOnLoad = ExitButtonHandler.TargetPanel.StartPanel; // 重置返回面板标记
     }
 
 
-    #region 初始化方法
+    #region 初始化方法（核心修改：按钮事件绑定+音效）
     private void InitButtonEvents()
     {
-        CheckButtonReferences();
+        CheckButtonReferences(); // 检查按钮引用是否完整
 
-        startButton.onClick.AddListener(OnClick_Start);
-        settingButton.onClick.AddListener(OnClick_Setting);
-        quitButton.onClick.AddListener(OnClick_Quit);
+        // ---------------- StartPanel 按钮（绑定：音效 + 原逻辑）----------------
+        startButton.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); // 播放按钮音效（索引1）
+            OnClick_Start();        // 原面板切换逻辑
+        });
+        settingButton.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_Setting(); 
+        });
+        quitButton.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_Quit(); 
+        });
 
-        theme1Button.onClick.AddListener(OnClick_Theme1);
-        theme2Button.onClick.AddListener(OnClick_Theme2);
-        theme3Button.onClick.AddListener(OnClick_Theme3);
-        backToStartButton.onClick.AddListener(OnClick_BackToStart);
+        // ---------------- ThemeSelectPanel 按钮（绑定：音效 + 原逻辑）----------------
+        theme1Button.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_Theme1(); 
+        });
+        theme2Button.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_Theme2(); 
+        });
+        theme3Button.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_Theme3(); 
+        });
+        backToStartButton.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_BackToStart(); 
+        });
 
-        backToThemeButton_1.onClick.AddListener(OnClick_BackToTheme);
-        backToThemeButton_2.onClick.AddListener(OnClick_BackToTheme);
-        backToThemeButton_3.onClick.AddListener(OnClick_BackToTheme);
+        // ---------------- LevelSelectPanel 按钮（绑定：音效 + 原逻辑）----------------
+        backToThemeButton_1.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_BackToTheme(); 
+        });
+        backToThemeButton_2.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_BackToTheme(); 
+        });
+        backToThemeButton_3.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); 
+            OnClick_BackToTheme(); 
+        });
     }
 
+    // 检查按钮引用是否为空（避免空引用错误）
     private void CheckButtonReferences()
     {
         if (startButton == null) Debug.LogError("HomePageUIManager: startButton 未赋值！");
@@ -116,15 +165,16 @@ public class HomePageUIManager : MonoBehaviour
         // 检查AudioManager的设置窗口是否赋值
         if (AudioManager.Instance != null && AudioManager.Instance.GetSettingCanvas() == null)
         {
-            Debug.LogError("HomePageUIManager: AudioManager中未赋值settingCanvas！");
+            Debug.LogError("HomePageUIManager: AudioManager中未赋值settingCanvas！请在AudioManager面板中配置设置窗口。");
         }
     }
     #endregion
 
 
-    #region 面板切换方法
+    #region 面板切换方法（原逻辑不变）
     private void ShowOnly(GameObject targetPanel)
     {
+        // 仅激活目标面板，隐藏其他面板
         startPanel.SetActive(targetPanel == startPanel);
         themeSelectPanel.SetActive(targetPanel == themeSelectPanel);
         levelSelectPanel_Theme1.SetActive(targetPanel == levelSelectPanel_Theme1);
@@ -140,6 +190,7 @@ public class HomePageUIManager : MonoBehaviour
 
     private void ShowTargetPanel()
     {
+        // 根据返回标记显示对应面板
         switch (TargetPanelOnLoad)
         {
             case ExitButtonHandler.TargetPanel.StartPanel:
@@ -160,7 +211,7 @@ public class HomePageUIManager : MonoBehaviour
         }
     }
 
-    // 按钮事件处理
+    // 按钮事件核心逻辑（原逻辑不变）
     public void OnClick_Start() => ShowOnly(themeSelectPanel);
     public void OnClick_Quit()
     {
@@ -181,7 +232,7 @@ public class HomePageUIManager : MonoBehaviour
     #endregion
 
 
-    #region 设置悬浮窗管理
+    #region 设置悬浮窗管理（修改：关闭按钮添加音效）
     // 点击设置按钮：显示设置窗口（从AudioManager获取）
     public void OnClick_Setting()
     {
@@ -215,7 +266,7 @@ public class HomePageUIManager : MonoBehaviour
         isSettingWindowOpen = true;
     }
 
-    // 设置窗口Canvas层级
+    // 设置窗口Canvas层级（原逻辑不变）
     private void SetupWindowCanvas()
     {
         Canvas windowCanvas = currentSettingWindow.GetComponent<Canvas>();
@@ -230,7 +281,7 @@ public class HomePageUIManager : MonoBehaviour
         windowCanvas.sortingOrder = baseSortingOrder + 1;
     }
 
-    // 窗口居中显示
+    // 窗口居中显示（原逻辑不变）
     private void CenterWindow()
     {
         RectTransform windowRect = currentSettingWindow.GetComponent<RectTransform>();
@@ -243,7 +294,7 @@ public class HomePageUIManager : MonoBehaviour
         }
     }
 
-    // 创建遮罩层
+    // 创建遮罩层（原逻辑不变）
     private void CreateOverlay()
     {
         // 销毁旧遮罩避免重复
@@ -267,10 +318,14 @@ public class HomePageUIManager : MonoBehaviour
 
         Button overlayButton = overlay.AddComponent<Button>();
         overlayButton.transition = Selectable.Transition.None;
-        overlayButton.onClick.AddListener(CloseSettingWindow);
+        overlayButton.onClick.AddListener(() => 
+        {
+            PlayButtonClickSound(); // 遮罩点击也播放音效（可选，按需求决定是否保留）
+            CloseSettingWindow(); 
+        });
     }
 
-    // 禁用其他UI交互
+    // 禁用其他UI交互（原逻辑不变）
     private void DisableOtherUI()
     {
         Selectable[] allUI = FindObjectsOfType<Selectable>(true);
@@ -287,11 +342,12 @@ public class HomePageUIManager : MonoBehaviour
         }
     }
 
-    // 绑定窗口内部关闭按钮
+    // 绑定窗口内部关闭按钮（修改：添加音效播放）
     private void BindInnerCloseButton()
     {
         Button closeButton = null;
 
+        // 按名称查找关闭按钮
         if (!string.IsNullOrEmpty(closeButtonName))
         {
             Transform closeBtnTransform = currentSettingWindow.transform.Find(closeButtonName);
@@ -301,6 +357,7 @@ public class HomePageUIManager : MonoBehaviour
             }
         }
 
+        // 未找到则查找窗口内第一个Button
         if (closeButton == null)
         {
             closeButton = currentSettingWindow.GetComponentInChildren<Button>(true);
@@ -308,8 +365,13 @@ public class HomePageUIManager : MonoBehaviour
 
         if (closeButton != null)
         {
-            closeButton.onClick.AddListener(CloseSettingWindow);
-            Debug.Log($"HomePageUIManager: 已绑定设置窗口关闭按钮：{closeButton.name}");
+            // 绑定：先播放音效，再关闭窗口
+            closeButton.onClick.AddListener(() => 
+            {
+                PlayButtonClickSound(); // 新增：关闭按钮播放音效（索引1）
+                CloseSettingWindow(); 
+            });
+            Debug.Log($"HomePageUIManager: 已绑定设置窗口关闭按钮：{closeButton.name}（含音效）");
         }
         else
         {
@@ -317,7 +379,7 @@ public class HomePageUIManager : MonoBehaviour
         }
     }
 
-    // 关闭设置窗口（隐藏而非销毁）
+    // 关闭设置窗口（隐藏而非销毁，原逻辑不变）
     public void CloseSettingWindow()
     {
         if (!isSettingWindowOpen || currentSettingWindow == null) return;
@@ -329,10 +391,11 @@ public class HomePageUIManager : MonoBehaviour
         }
         disabledUIElements.Clear();
 
-        // 调用AudioManager隐藏窗口
+        // 调用AudioManager隐藏窗口（原逻辑：若AudioManager有Hide方法可补充，此处保持原代码）
         if (AudioManager.Instance != null)
         {
-            //AudioManager.Instance.HideSettingCanvas();
+            // 注：若AudioManager未实现HideSettingCanvas，需在AudioManager中补充：
+            // public void HideSettingCanvus() { settingCanvus?.SetActive(false); }
         }
 
         // 销毁动态遮罩
@@ -349,7 +412,26 @@ public class HomePageUIManager : MonoBehaviour
     #endregion
 
 
-    // 清理事件监听
+    #region 音效工具方法（新增：统一播放按钮点击音效）
+    /// <summary>
+    /// 统一播放按钮点击音效（调用AudioManager的指定索引音效）
+    /// </summary>
+    private void PlayButtonClickSound()
+    {
+        // 空引用防护：确保AudioManager实例存在
+        if (AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySoundEffect(buttonClickSoundIndex); // 播放索引1的音效
+        }
+        else
+        {
+            Debug.LogWarning("HomePageUIManager: AudioManager实例不存在，无法播放按钮音效！");
+        }
+    }
+    #endregion
+
+
+    // 清理事件监听（原逻辑不变，避免内存泄漏）
     private void OnDestroy()
     {
         if (startButton != null) startButton.onClick.RemoveAllListeners();
@@ -364,5 +446,15 @@ public class HomePageUIManager : MonoBehaviour
         if (backToThemeButton_1 != null) backToThemeButton_1.onClick.RemoveAllListeners();
         if (backToThemeButton_2 != null) backToThemeButton_2.onClick.RemoveAllListeners();
         if (backToThemeButton_3 != null) backToThemeButton_3.onClick.RemoveAllListeners();
+
+        // 清理设置窗口关闭按钮监听（避免残留）
+        if (currentSettingWindow != null)
+        {
+            Button closeButton = currentSettingWindow.GetComponentInChildren<Button>(true);
+            if (closeButton != null)
+            {
+                closeButton.onClick.RemoveListener(CloseSettingWindow);
+            }
+        }
     }
 }

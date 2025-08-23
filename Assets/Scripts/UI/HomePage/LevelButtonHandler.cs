@@ -15,6 +15,7 @@ public class LevelButtonHandler : MonoBehaviour
 
     private void OnClick_LoadScene()
     {
+        AudioManager.Instance.PlaySoundEffect(1);
         if (!string.IsNullOrEmpty(sceneName))
         {
             Debug.Log($"加载场景：{sceneName}");

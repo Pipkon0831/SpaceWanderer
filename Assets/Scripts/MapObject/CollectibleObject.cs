@@ -58,6 +58,11 @@ public class CollectibleObject : MonoBehaviour
     public Color directionRayColor = Color.cyan;
     [Tooltip("射线宽度（Scene视图）")]
     public float rayWidth = 0.05f;
+
+    // ------------- 新增：音效配置 -------------
+    [Header("碰撞音效配置")]
+    public int collisionSoundIndex = 3; // 碰撞任意物体的音效索引（固定为3）
+    private AudioManager audioManager; // AudioManager实例引用
     
     private Rigidbody2D rb;
     private bool hasCollidedWithPlayer = false;
@@ -78,9 +83,17 @@ public class CollectibleObject : MonoBehaviour
         // （原有Start方法逻辑保持不变）
         rb = GetComponent<Rigidbody2D>();
         hookSystem = HookSystem.Instance;
+        // ------------- 新增：获取AudioManager实例 -------------
+        audioManager = AudioManager.Instance;
+        
         if (hookSystem == null)
         {
             Debug.LogError("场景中未找到HookSystem实例！请确保HookSystem已挂载且设置为单例模式");
+        }
+        // ------------- 新增：检查AudioManager实例 -------------
+        if (audioManager == null)
+        {
+            Debug.LogError("场景中未找到AudioManager实例！碰撞音效无法播放，请确保AudioManager已挂载且设置为单例模式");
         }
         
         NormalizeInitialDirection();
@@ -166,7 +179,7 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
-    // 新增：在Scene视图绘制方向射线
+    // （原有OnDrawGizmos方法保持不变）
     private void OnDrawGizmos()
     {
         // 固定物体不显示射线
@@ -188,7 +201,7 @@ public class CollectibleObject : MonoBehaviour
         Gizmos.DrawWireSphere(rayStart, rayWidth);
     }
 
-    // （以下所有原有方法保持不变）
+    // （原有SetInitialVelocity方法保持不变）
     public void SetInitialVelocity(float speed, Vector2 direction)
     {
         if (isFixedObject) return;
@@ -199,6 +212,7 @@ public class CollectibleObject : MonoBehaviour
         StartCoroutine(DelayedApplyVelocity());
     }
 
+    // （原有DelayedApplyVelocity方法保持不变）
     private IEnumerator DelayedApplyVelocity()
     {
         yield return null;
@@ -209,8 +223,20 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"[{Time.time}] 延迟应用速度: {finalVelocity} (物体: {gameObject.name})");
     }
 
+    // ------------- 核心修改：OnCollisionEnter2D 方法添加碰撞音效 -------------
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        // 1. 所有碰撞（无论Tag/Layer）先播放音效（销毁状态除外）
+        if (!isDestroyedState() && audioManager != null)
+        {
+            audioManager.PlaySoundEffect(collisionSoundIndex); // 播放索引3的音效
+            if (showDebugInfo)
+            {
+                Debug.Log($"[{gameObject.name}] 碰撞 [{collision.gameObject.name}]，播放碰撞音效（索引：{collisionSoundIndex}）");
+            }
+        }
+
+        // 2. 原有碰撞逻辑（保持不变，在音效播放后执行）
         if (isDestroyedState()) return;
 
         if (showDebugInfo)
@@ -272,6 +298,7 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
+    // （原有OnCollisionExit2D方法保持不变）
     private void OnCollisionExit2D(Collision2D collision)
     {
         if (collision.gameObject.CompareTag("Player"))
@@ -280,6 +307,7 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
+    // （以下所有原有方法：ApplyCollisionDamage、CalculateAndApplyPlayerDamage、ApplyPhysicsCollision、ApplyAntiStickForce、TakeDamage、OnHookCollision、OnGrabbed、OnReleased、OnHarvested、CollectForPlayer、DestroyObject、SetMass、isDestroyedState、IsCollectibleType、IsObstacleType、ApplyInitialRotation 均保持不变）
     private void ApplyCollisionDamage(CollectibleObject other, Collision2D collision)
     {
         if (rb == null || other.rb == null)

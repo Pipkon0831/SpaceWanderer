@@ -27,6 +27,7 @@ public class ExitButtonHandler : MonoBehaviour
 
     private void ExitToMenu()
     {
+        AudioManager.Instance.PlaySoundEffect(1);
         Time.timeScale = 1f;
 
         HomePageUIManager.TargetPanelOnLoad = targetPanel;

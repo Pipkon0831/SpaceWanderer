@@ -166,6 +166,7 @@ public class MissileLauncher : MonoBehaviour
 
         // 调用能量系统增加温度
         hookSystem.AddHeat(launchHeat);
+        AudioManager.Instance.PlaySoundEffect(4);
     }
 
     void OnGUI()

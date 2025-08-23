@@ -75,6 +75,7 @@ public class Missile : MonoBehaviour
 
     void Explode()
     {
+        AudioManager.Instance.PlaySoundEffect(0);
         DrawExplosionRange();
         DamageObjectsInRange();  // 方法名称和功能更新
         Destroy(gameObject);

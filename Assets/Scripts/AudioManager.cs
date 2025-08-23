@@ -48,9 +48,9 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private Toggle soundEffectVolumeToggle;
 
     [Header("默认设置")]
-    [SerializeField] private float defaultMasterVolume = 1.0f;
-    [SerializeField] private float defaultMusicVolume = 0.8f;
-    [SerializeField] private float defaultSoundEffectVolume = 1.0f;
+    [SerializeField] private float defaultMasterVolume = 1.0f;  // 
+    [SerializeField] private float defaultMusicVolume = 0.8f;  // 
+    [SerializeField] private float defaultSoundEffectVolume = 1.0f; 
     [SerializeField] private bool defaultMasterEnabled = true;
     [SerializeField] private bool defaultMusicEnabled = true;
     [SerializeField] private bool defaultSoundEffectEnabled = true;
@@ -93,8 +93,10 @@ public class AudioManager : MonoBehaviour
     private void Start()
     {
         BindUIEvents(); // 绑定UI交互事件
-        PlayMusic(defaultMusicIndex); // 播放默认背景音乐
         settingCanvus?.SetActive(false); // 默认隐藏设置面板
+        _currentMusicIndex = -1;
+        PlayMusic(0); // 播放默认背景音乐
+        Debug.Log($"当前音乐索引: {_currentMusicIndex}");
     }
 
     #region 基础初始化与UI绑定（原功能保留）
@@ -460,21 +462,28 @@ public class AudioManager : MonoBehaviour
     /// </summary>
     public void PlayMusic(int index)
     {
+        Debug.Log("111");
         if (index < 0 || index >= backgroundMusics.Count || backgroundMusics[index] == null)
         {
+            Debug.Log("333");
             Debug.LogWarning($"背景音乐索引「{index}」无效，请检查backgroundMusics列表！");
             return;
         }
 
         // 同一首音乐不重复播放
-        if (index == _currentMusicIndex && musicSource.isPlaying) return;
+        if (index == _currentMusicIndex && musicSource.isPlaying)
+        {
+            Debug.Log("222");
+            return;
+        }
+
 
         _currentMusicIndex = index;
         musicSource.clip = backgroundMusics[index];
         musicSource.loop = true; // 背景音乐默认循环
 
         // 音乐启用时播放
-        if (_isMasterEnabled && _isMusicEnabled)
+            Debug.Log("111");
             musicSource.Play();
     }
 
