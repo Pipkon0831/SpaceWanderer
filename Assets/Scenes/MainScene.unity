@@ -8186,11 +8186,11 @@ PrefabInstance:
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: soundEffects.Array.data[7]
       value: 
-      objectReference: {fileID: 8300000, guid: 317ae3299f222ec49b070d9c2857d857, type: 3}
+      objectReference: {fileID: 8300000, guid: 5986dd74e9c147146acf821b8f17fdd4, type: 3}
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: soundEffects.Array.data[8]
       value: 
-      objectReference: {fileID: 8300000, guid: 92491fb280c636e4fb6c1b49cfa8c68d, type: 3}
+      objectReference: {fileID: 8300000, guid: 4b425be9ff4da3b4ba7bc37622d92b89, type: 3}
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: backgroundMusics.Array.size
       value: 2

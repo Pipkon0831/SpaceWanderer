@@ -469,6 +469,7 @@ public class HookSystem : MonoBehaviour
                     }
                     currentOverheatState = OverheatState.Cooling;
                     currentOverheatTime = 0f;
+                    AudioManager.Instance.PlaySoundEffect(5);
                     // 触发冷却事件，通知护盾关闭
                     OnOverheatEnterCooling?.Invoke();
                     isAccelerating = false;
