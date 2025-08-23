@@ -473,6 +473,12 @@ public class HookSystem : MonoBehaviour
                     // 触发冷却事件，通知护盾关闭
                     OnOverheatEnterCooling?.Invoke();
                     isAccelerating = false;
+                    currentOverheatTime = 0f;
+                }
+                else if (currentTemperature <= overheatThreshold)
+                {
+                    currentOverheatState = OverheatState.Normal;
+                    currentOverheatTime = 0f; // 关键修复：重置过热计时器
                 }
                 break;
             case OverheatState.Cooling:
