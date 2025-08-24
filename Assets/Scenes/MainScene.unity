@@ -8198,7 +8198,7 @@ PrefabInstance:
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: backgroundMusics.Array.data[0]
       value: 
-      objectReference: {fileID: 8300000, guid: 9bf7fc4a8b9c242428bb843aa1fcdf78, type: 3}
+      objectReference: {fileID: 8300000, guid: fda4cf2e06587a847b1bfba393062848, type: 3}
     - target: {fileID: 2300381659196261838, guid: 2623896efc0358a4ab1038cbe1d6e421, type: 3}
       propertyPath: backgroundMusics.Array.data[1]
       value: 
