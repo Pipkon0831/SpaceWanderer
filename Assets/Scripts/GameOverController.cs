@@ -82,12 +82,6 @@ public class GameOverController : MonoBehaviour
             GameOver(false);  // 因生命值归零失败
         }
 
-        // 检查分数胜利条件（仅在非死亡状态下）
-        if (hookSystem != null && hookSystem.currentScore >= winScoreThreshold)
-        {
-            GameOver(true);  // 因达到胜利分数成功
-        }
-
         // 如果是时间结束模式，进行计时
         if (gameOverType == GameOverType.Time)
         {
