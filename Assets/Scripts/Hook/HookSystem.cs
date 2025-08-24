@@ -603,7 +603,13 @@ public class HookSystem : MonoBehaviour
     /// 计算目标回收速度（受抓取质量影响）
     private float CalculateTargetRetrieveSpeed()
     {
-        if(grabbedMass == 0) return nullRetrieveSpeed; // 无抓取质量时使用基础速度
+        // 空钩回收：判断是否加速，加速则用“加速回收速度”，否则用“空钩基础速度”
+        if (grabbedMass == 0) 
+        {
+            return isAccelerating ? accelerateRetrieveSpeed : nullRetrieveSpeed;
+        }
+
+        // 有抓取质量时的原有逻辑（保持不变）
         float massResistance = 1 + grabbedMass; // 质量阻力：抓取质量越大，阻力越大
         float baseSpeed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed; // 基础速度（加速/正常）
         // 回收速度 = 基础速度 × 2 / 阻力（确保质量越大速度越慢，保留一个最低值）
