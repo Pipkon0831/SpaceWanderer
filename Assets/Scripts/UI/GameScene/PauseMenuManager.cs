@@ -8,7 +8,6 @@ public class PauseMenuManager : MonoBehaviour
     public Button continueButton;
     public SettingsButtonHandler settingsButtonHandler; // 引用设置按钮处理器
 
-    // ------------- 新增：音效配置 -------------
     [Header("按钮音效配置")]
     public int buttonClickSoundIndex = 1; // 与主场景一致，使用索引1的按钮音效
     private bool isAudioManagerReady => AudioManager.Instance != null; // 简化空引用判断
@@ -20,7 +19,6 @@ public class PauseMenuManager : MonoBehaviour
         stopUI.SetActive(false);
         continueButton.gameObject.SetActive(false);
         
-        // ------------- 修改：继续按钮绑定「音效+原逻辑」 -------------
         continueButton.onClick.AddListener(() => 
         {
             PlayButtonClickSound();
@@ -33,7 +31,6 @@ public class PauseMenuManager : MonoBehaviour
             settingsButtonHandler.OnWindowOpened += HandleWindowOpened;
             settingsButtonHandler.OnWindowClosed += HandleWindowClosed;
             
-            // ------------- 新增：给设置按钮添加音效（通过处理器间接绑定） -------------
             BindSettingsButtonSound();
         }
     }
@@ -45,13 +42,11 @@ public class PauseMenuManager : MonoBehaviour
             if (!isPaused)
             {
                 PauseGame();
-                // ------------- 新增：ESC键暂停时播放按钮音效（模拟“打开暂停菜单”的交互反馈） -------------
                 PlayButtonClickSound();
             }
             else if (settingsButtonHandler == null || !settingsButtonHandler.IsWindowOpen())
             {
                 ResumeGame();
-                // ------------- 新增：ESC键恢复时播放按钮音效 -------------
                 PlayButtonClickSound();
             }
         }
@@ -64,6 +59,12 @@ public class PauseMenuManager : MonoBehaviour
         stopUI.SetActive(true);
         continueButton.gameObject.SetActive(true);
         EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
+        
+        // 暂停音乐和持续音效
+        if (isAudioManagerReady)
+        {
+            AudioManager.Instance.OnGamePause();
+        }
     }
 
     void ResumeGame()
@@ -72,15 +73,21 @@ public class PauseMenuManager : MonoBehaviour
         Time.timeScale = 1f;
         stopUI.SetActive(false);
         continueButton.gameObject.SetActive(false);
+        
+        // 恢复音乐和持续音效
+        if (isAudioManagerReady)
+        {
+            AudioManager.Instance.OnGameResume();
+        }
     }
 
-    // 处理悬浮窗打开事件（原逻辑不变）
+    // 处理悬浮窗打开事件
     private void HandleWindowOpened()
     {
         EventSystem.current.SetSelectedGameObject(null);
     }
 
-    // 处理悬浮窗关闭事件（原逻辑不变）
+    // 处理悬浮窗关闭事件
     private void HandleWindowClosed()
     {
         if (isPaused)
@@ -89,16 +96,12 @@ public class PauseMenuManager : MonoBehaviour
         }
     }
 
-    // ------------- 新增：给设置按钮绑定音效（通过SettingsButtonHandler获取按钮） -------------
+    // 给设置按钮绑定音效
     private void BindSettingsButtonSound()
     {
-        // 假设SettingsButtonHandler中有“设置按钮”的引用（若没有，需在SettingsButtonHandler中暴露按钮）
         Button settingsButton = settingsButtonHandler.GetComponent<Button>();
         if (settingsButton != null)
         {
-            // 先移除原有监听（避免重复绑定），再绑定“音效+原逻辑”
-            // 注意：若SettingsButtonHandler的按钮已有点击逻辑，需用“链式调用”保留原逻辑
-            // （此处假设SettingsButtonHandler的按钮点击逻辑在其内部，仅补充音效）
             settingsButton.onClick.AddListener(PlayButtonClickSound);
             Debug.Log("PauseMenuManager: 已给设置按钮绑定点击音效");
         }
@@ -109,7 +112,7 @@ public class PauseMenuManager : MonoBehaviour
         }
     }
 
-    // ------------- 新增：统一播放按钮点击音效 -------------
+    // 统一播放按钮点击音效
     private void PlayButtonClickSound()
     {
         if (isAudioManagerReady)
@@ -122,7 +125,7 @@ public class PauseMenuManager : MonoBehaviour
         }
     }
 
-    // 清理事件监听（原逻辑不变，补充音效监听的清理）
+    // 清理事件监听
     private void OnDestroy()
     {
         // 清理继续按钮监听
@@ -137,7 +140,7 @@ public class PauseMenuManager : MonoBehaviour
             settingsButtonHandler.OnWindowOpened -= HandleWindowOpened;
             settingsButtonHandler.OnWindowClosed -= HandleWindowClosed;
             
-            // ------------- 新增：清理设置按钮的音效监听 -------------
+            // 清理设置按钮的音效监听
             Button settingsButton = settingsButtonHandler.GetComponent<Button>();
             if (settingsButton != null)
             {
