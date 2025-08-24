@@ -119,7 +119,7 @@ public class HookSystem : MonoBehaviour
     [HideInInspector] public float currentLength = 0f; // 钩爪当前长度
     [HideInInspector] public float currentRotation = 0f; // 当前旋转角度（度）
     [HideInInspector] public float currentTemperature; // 当前温度
-    [HideInInspector] public float currentHealth; // 当前生命值
+    [HideInInspector] public float currentHealth = -1f; // 当前生命值
     [HideInInspector] public OverheatState currentOverheatState = OverheatState.Normal; // 当前过热状态
     [HideInInspector] public float currentOverheatTime = 0f; // 过热持续时间
     [HideInInspector] public float spaceShipVelocity = 0f; // 飞船速度（暂未使用）
@@ -173,6 +173,8 @@ public class HookSystem : MonoBehaviour
     /// 初始化钩爪尖端和初始状态
     private void Start()
     {
+        AudioManager.Instance.ResumeAllActiveLoopSounds(); // 恢复所有音效
+        AudioManager.Instance.ResumeMusic();
         AudioManager.Instance.PlayMusic(1);
         InitFromPrefabs(); // 从预制体初始化钩爪尖端
         Init(); // 初始化状态变量

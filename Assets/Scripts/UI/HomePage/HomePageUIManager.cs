@@ -78,6 +78,8 @@ public class HomePageUIManager : MonoBehaviour
 
     private void Start()
     {
+        AudioManager.Instance.ResumeAllActiveLoopSounds(); // 恢复所有音效
+        AudioManager.Instance.ResumeMusic();
         InitButtonEvents(); // 初始化按钮事件（含音效绑定）
         ShowTargetPanel();  // 显示目标面板
         TargetPanelOnLoad = ExitButtonHandler.TargetPanel.StartPanel; // 重置返回面板标记

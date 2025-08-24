@@ -519,7 +519,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // 暂停所有活跃的持续音效
-    private void PauseAllActiveLoopSounds()
+    public void PauseAllActiveLoopSounds()
     {
         foreach (var source in _activeSoundSources)
         {
@@ -531,7 +531,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // 恢复所有暂停的持续音效
-    private void ResumeAllActiveLoopSounds()
+    public void ResumeAllActiveLoopSounds()
     {
         foreach (var source in _activeSoundSources)
         {
