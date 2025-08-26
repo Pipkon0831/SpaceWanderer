@@ -9,56 +9,15 @@ public class Bomb : MonoBehaviour
 
     [Tooltip("爆炸伤害值")]
     public float explosionDamage = 50f;
-
+    
     // 可被伤害的标签列表
     private List<string> damageableTags = new List<string> { "Obstacle", "Collectible" };
-    
-    // 钩爪系统引用
-    private HookSystem hookSystem;
-
-
-    void Awake()
-    {
-        // 获取钩爪系统单例
-        hookSystem = HookSystem.Instance;
-    }
 
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // 核心过滤：被抓取的物体 / 回收状态的钩爪 → 不触发爆炸
-        if (IsIgnoredObject(other))
-        {
-            return;
-        }
-
-        // 非忽略物体 → 触发爆炸
+        // 任何碰撞都会触发爆炸，不做任何过滤
         Explode();
-    }
-
-
-    /// <summary>
-    /// 判断是否为需要忽略的对象
-    /// </summary>
-    private bool IsIgnoredObject(Collider2D other)
-    {
-        // 1. 检查是否是钩爪尖端
-        HookTipCollisionHandler hookTip = other.GetComponent<HookTipCollisionHandler>();
-        if (hookTip != null && hookSystem != null)
-        {
-            // 钩爪在回收状态时碰到不触发爆炸，其他状态会触发
-            return hookSystem.currentState == HookSystem.HookState.Retrieving;
-        }
-
-        // 2. 忽略“被抓取的Collectible物体”
-        CollectibleObject collectible = other.GetComponent<CollectibleObject>();
-        if (collectible != null)
-        {
-            return collectible.currentState == CollectibleObject.CollectibleState.Grabbed;
-        }
-
-        // 非忽略对象
-        return false;
     }
 
 
@@ -81,11 +40,6 @@ public class Bomb : MonoBehaviour
         Collider2D[] collidersInRange = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
         foreach (Collider2D collider in collidersInRange)
         {
-            if (IsIgnoredObject(collider))
-            {
-                continue;
-            }
-
             if (damageableTags.Contains(collider.tag))
             {
                 CollectibleObject target = collider.GetComponent<CollectibleObject>();
