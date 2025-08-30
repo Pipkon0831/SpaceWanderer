@@ -29,12 +29,13 @@ public class ExitButtonHandler : MonoBehaviour
     {
         AudioManager.Instance.PlaySoundEffect(1);
         Time.timeScale = 1f;
+        AudioManager.Instance.OnGameResume(); 
 
         HomePageUIManager.TargetPanelOnLoad = targetPanel;
 
         if (!string.IsNullOrEmpty(menuSceneName))
         {
-            SceneManager.LoadScene(menuSceneName);
+            SceneManager.LoadScene(0);
         }
         else
         {

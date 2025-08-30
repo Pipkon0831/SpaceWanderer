@@ -312,7 +312,6 @@ public class AudioManager : MonoBehaviour
     // ---------------- 短音效播放 ----------------
     public void PlaySoundEffect(string effectName)
     {
-        // 即使游戏暂停，也允许播放短音效（如点击音效）
         if (!_isMasterEnabled || !_isSoundEffectEnabled) return;
 
         int index = soundEffects.FindIndex(clip => clip != null && clip.name == effectName);
@@ -328,10 +327,15 @@ public class AudioManager : MonoBehaviour
         if (source != null && targetClip != null)
         {
             source.clip = targetClip;
+            // ✅ 立即根据当前设置计算音量
+            float finalSoundVolume = _isMasterEnabled && _isSoundEffectEnabled ? _masterVolume * _soundEffectVolume : 0;
+            source.volume = finalSoundVolume;
+
             source.Play();
             StartCoroutine(WaitForSoundEnd(source, targetClip.length));
         }
     }
+
 
     public void PlaySoundEffect(int index)
     {

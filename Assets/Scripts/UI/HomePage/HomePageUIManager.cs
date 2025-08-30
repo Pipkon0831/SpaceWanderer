@@ -72,7 +72,7 @@ public class HomePageUIManager : MonoBehaviour
         // 检查AudioManager单例是否存在（提前排查依赖问题）
         if (AudioManager.Instance == null)
         {
-            Debug.LogError("HomePageUIManager: 场景中未找到AudioManager单例！请确保AudioManager已在场景中配置。");
+            //Debug.LogError("HomePageUIManager: 场景中未找到AudioManager单例！请确保AudioManager已在场景中配置。");
         }
     }
 
