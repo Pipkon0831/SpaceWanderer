@@ -20,7 +20,8 @@ public class Missile : MonoBehaviour
     [Tooltip("导弹半径")]
     public float capsuleRadius = 0.3f;
 
-    private List<string> damageableTags = new List<string> { "Obstacle", "Collectible" };  // 重命名标签列表
+    // 可触发爆炸的目标标签列表（可根据需求添加更多标签，如"Enemy"）
+    private List<string> damageableTags = new List<string> { "Obstacle", "Collectible" };
 
     // 胶囊体方向（水平或垂直）
     private CapsuleDirection2D capsuleDirection = CapsuleDirection2D.Horizontal;
@@ -65,11 +66,25 @@ public class Missile : MonoBehaviour
         }
     }
 
+    // 核心修改：优化碰撞检测逻辑，确保触发爆炸，增加调试日志
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (damageableTags.Contains(other.tag))  // 标签列表名称更新
+        // 打印碰撞信息，方便排查标签/物体匹配问题
+        Debug.Log($"导弹碰撞到：{other.gameObject.name} | 标签：{other.tag}", other.gameObject);
+
+        // 1. 碰撞到可伤害目标，直接爆炸
+        if (damageableTags.Contains(other.tag))
         {
             Explode();
+        }
+        // 2. 碰撞到非目标物体（如地形、墙壁）也强制爆炸（避免导弹穿透）
+        else
+        {
+            // 排除不需要触发爆炸的标签（如玩家，可根据需求调整）
+            if (!other.CompareTag("Player"))
+            {
+                Explode();
+            }
         }
     }
 
@@ -77,7 +92,7 @@ public class Missile : MonoBehaviour
     {
         AudioManager.Instance.PlaySoundEffect(0);
         DrawExplosionRange();
-        DamageObjectsInRange();  // 方法名称和功能更新
+        DamageObjectsInRange();
         Destroy(gameObject);
     }
 
